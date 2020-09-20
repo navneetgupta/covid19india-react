@@ -1,112 +1,88 @@
 import './App.scss';
+import Blog from './components/Blog';
+import Navbar from './components/Navbar';
 
-import DeepDive from './components/deepdive';
-import FAQ from './components/faq';
-import Home from './components/home';
-import Navbar from './components/navbar';
-import PatientDB from './components/patientdb';
-import Resources from './components/resources';
-import State from './components/state';
-import ScrollToTop from './utils/ScrollToTop';
+import React, {lazy, useState, Suspense, useEffect} from 'react';
+import {Route, Redirect, Switch, useLocation} from 'react-router-dom';
+import useDarkMode from 'use-dark-mode';
 
-import React from 'react';
-import {
-  BrowserRouter as Router,
-  Route,
-  Redirect,
-  Switch,
-} from 'react-router-dom';
-import {useLocalStorage} from 'react-use';
+const Home = lazy(() => import('./components/Home'));
+const About = lazy(() => import('./components/About'));
+const State = lazy(() => import('./components/State'));
+const LanguageSwitcher = lazy(() => import('./components/LanguageSwitcher'));
 
-function App() {
+const App = () => {
+  const darkMode = useDarkMode(false);
+  const [showLanguageSwitcher, setShowLanguageSwitcher] = useState(false);
+  const location = useLocation();
+
   const pages = [
     {
       pageLink: '/',
       view: Home,
       displayName: 'Home',
-      animationDelayForNavbar: 0.2,
       showInNavbar: true,
     },
     {
-      pageLink: '/demographics',
-      view: PatientDB,
-      displayName: 'Demographics',
-      animationDelayForNavbar: 0.3,
+      pageLink: '/blog',
+      view: Blog,
+      displayName: 'Blog',
       showInNavbar: true,
     },
     {
-      pageLink: '/deepdive',
-      view: DeepDive,
-      displayName: 'Deep Dive',
-      animationDelayForNavbar: 0.4,
-      showInNavbar: true,
-    },
-    {
-      pageLink: '/essentials',
-      view: Resources,
-      displayName: 'Essentials',
-      animationDelayForNavbar: 0.5,
-      showInNavbar: true,
-    },
-    {
-      pageLink: '/faq',
-      view: FAQ,
-      displayName: 'FAQ',
-      animationDelayForNavbar: 0.6,
+      pageLink: '/about',
+      view: About,
+      displayName: 'About',
       showInNavbar: true,
     },
     {
       pageLink: '/state/:stateCode',
       view: State,
       displayName: 'State',
-      animationDelayForNavbar: 0.7,
       showInNavbar: false,
     },
   ];
 
-  const [darkMode, setDarkMode] = useLocalStorage('darkMode', false);
-
-  React.useEffect(() => {
-    if (darkMode) {
-      document.querySelector('body').classList.add('dark-mode');
-    } else {
-      document.querySelector('body').classList.remove('dark-mode');
+  useEffect(() => {
+    if (showLanguageSwitcher) {
+      // For Chrome, Firefox, IE and Opera
+      document.documentElement.scrollTo({top: 0, behavior: 'smooth'});
+      // For Safari
+      document.body.scrollTo({top: 0, behavior: 'smooth'});
     }
-  }, [darkMode]);
+  }, [showLanguageSwitcher]);
 
   return (
-    <div className={`App ${darkMode ? 'dark-mode' : ''}`}>
-      <Router>
-        <ScrollToTop />
-        <Route
-          render={({location}) => (
-            <div className="Almighty-Router">
-              <Navbar
-                pages={pages}
-                darkMode={darkMode}
-                setDarkMode={setDarkMode}
-              />
-              <Switch location={location}>
-                {pages.map((page, index) => {
-                  return (
-                    <Route
-                      exact
-                      path={page.pageLink}
-                      render={({match}) => (
-                        <page.view key={match.params.stateCode || index} />
-                      )}
-                      key={index}
-                    />
-                  );
-                })}
-                <Redirect to="/" />
-              </Switch>
-            </div>
-          )}
+    <div className="App">
+      <Suspense fallback={<div />}>
+        <LanguageSwitcher
+          {...{showLanguageSwitcher, setShowLanguageSwitcher}}
         />
-      </Router>
+      </Suspense>
+
+      <Navbar
+        pages={pages}
+        {...{darkMode}}
+        {...{showLanguageSwitcher, setShowLanguageSwitcher}}
+      />
+
+      <Suspense fallback={<div />}>
+        <Switch location={location}>
+          {pages.map((page, index) => {
+            return (
+              <Route
+                exact
+                path={page.pageLink}
+                render={({match}) => <page.view />}
+                key={index}
+              />
+            );
+          })}
+          <Redirect to="/" />
+        </Switch>
+      </Suspense>
     </div>
   );
-}
+};
 
 export default App;
